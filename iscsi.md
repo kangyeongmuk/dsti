@@ -37,9 +37,14 @@ iscsi/iqn.2025-12.com.test:1234/tpg1/acls create iqn.1994-05.com.redhat:d4dd30d5
 # targetcli 종료
 exit
 
+---
+
 ##2️⃣ Initiator 서버 (디스크 받는 서버)
 **IP: 192.168.150.142
 **역할: Target 검색, 로그인, 디스크 마운트
+
+```bash
+
 
 # 2.1 iSCSI Initiator 패키지 설치
 yum install -y iscsi-initiator-utils
