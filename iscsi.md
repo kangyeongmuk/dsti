@@ -5,7 +5,7 @@
 
 ---
 
-## 1️⃣ Target 서버 (디스크 제공 서버)
+### 1️⃣ Target 서버 (디스크 제공 서버)
 **IP:** 192.168.150.140  
 **역할:** iSCSI Target 설치, LUN 생성, 포털 설정, ACL 등록  
 
@@ -37,10 +37,12 @@ iscsi/iqn.2025-12.com.test:1234/tpg1/acls create iqn.1994-05.com.redhat:d4dd30d5
 # targetcli 종료
 exit
 
-
-## 2️⃣ Initiator 서버 (디스크 받는 서버)
+```
+### 2️⃣ Initiator 서버 (디스크 받는 서버)
 **IP: 192.168.150.142
 **역할: Target 검색, 로그인, 디스크 마운트
+
+```bash
 
 # iSCSI Initiator 패키지 설치
 yum install -y iscsi-initiator-utils
@@ -66,4 +68,5 @@ df -Th
 
 # 부팅 시 자동 마운트 등록
 echo "/dev/sdb  /iscsiVolume  ext4  _netdev  0 0" >> /etc/fstab
+```
 
