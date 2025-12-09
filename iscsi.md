@@ -44,8 +44,6 @@ exit
 **역할: Target 검색, 로그인, 디스크 마운트
 
 ```bash
-
-
 # 2.1 iSCSI Initiator 패키지 설치
 yum install -y iscsi-initiator-utils
 
