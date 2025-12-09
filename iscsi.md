@@ -37,6 +37,10 @@ targetcli
 # 쉘 종료
 / > exit
 
+#2️⃣ Initiator 서버 (디스크 받는 서버)
+#IP: 192.168.150.142
+#역할: Target 검색, 로그인, 디스크 마운트
+
 
 # 2.1 iSCSI Initiator 패키지 설치
 yum install -y iscsi-initiator-utils
