@@ -1,87 +1,104 @@
-Bonding 설정 (RHEL 8.8)
+#!/bin/bash
 
-2025년 8월 13일 수요일
+echo "=== Bond 인터페이스 생성 스크립트 ==="
 
-오후 1:18
+read -p "Bond 이름 입력 (default: bond0): " BOND_NAME
+BOND_NAME=${BOND_NAME:-bond0}
 
-Active-Backup(Mode 1) 설정
- 
+read -p "Bond 모드 입력 (default: active-backup): " BOND_MODE
+BOND_MODE=${BOND_MODE:-active-backup}
 
-1. Bonding 모듈 로딩
+read -p "Bond IP 주소 입력 (예: 192.168.137.155): " BOND_IP
+read -p "Bond Prefix 입력 (예: 24): " BOND_PREFIX
+read -p "Gateway 입력 (예: 192.168.137.1): " BOND_GW
 
-lsmod | grep bond
-modprobe bonding
-lsmod | grep bond
- 
+# IP + Prefix 조합
+BOND_ADDR="${BOND_IP}/${BOND_PREFIX}"
 
-2. 본딩 생성 및 고정 IP 설정
+read -p "Slave NIC 1 이름 입력 (예: ens160): " SLAVE1
+read -p "Slave NIC 2 이름 입력 (예: ens192): " SLAVE2
 
-nmcli connection add type bond mode active-backup ipv4.method manual ipv4.addresses 192.168.137.155/24 ipv4.gateway 192.168.137.1 ifname bond0 con-name bond0 autoconnect yes
+echo
+echo "===== 입력값 확인 ====="
+echo " Bond Name : $BOND_NAME"
+echo " Bond Mode : $BOND_MODE"
+echo " Bond IP   : $BOND_ADDR"
+echo " Bond GW   : $BOND_GW"
+echo " Slave1    : $SLAVE1 (Primary)"
+echo " Slave2    : $SLAVE2"
+echo "======================="
 
-nmcli connection show bond0 | grep -e connection.id -e ipv4.method -e ipv4.addresses -e ipv4.gateway
- 
+read -p "위 설정으로 생성할까요? (y/n): " CONFIRM
+if [[ "$CONFIRM" != "y" ]]; then
+    echo "취소됨."
+    exit 1
+fi
 
 
-3. 네트워크 본딩 slave 추가
+echo "[1] 기존 Slave NIC 관련 프로파일 삭제"
+nmcli connection delete ${SLAVE1}-${BOND_NAME} 2>/dev/null
+nmcli connection delete ${SLAVE2}-${BOND_NAME} 2>/dev/null
+nmcli connection delete $SLAVE1 2>/dev/null
+nmcli connection delete $SLAVE2 2>/dev/null
 
-nmcli connection add type ethernet slave-type bond master bond0 ifname ens160 con-name ens160
-nmcli connection add type ethernet slave-type bond master bond0 ifname ens192 con-name ens192
-nmcli connection show | grep -e ens160 -e ens192
- 
 
-설명 : ens160,ens192를 bond0에 본딩
-주의사항 : ifname, con-name 맞춰주기 (실제 물리 서버에서 오류 가능성)
- 
+echo "[2] Bond 생성 또는 수정"
 
-4. 본딩 primary slave 설정
+nmcli connection add type bond \
+    ifname $BOND_NAME con-name $BOND_NAME \
+    mode $BOND_MODE ipv4.method manual \
+    ipv4.addresses $BOND_ADDR ipv4.gateway $BOND_GW \
+    bond.options "mode=$BOND_MODE,primary=$SLAVE1" \
+    autoconnect yes 2>/dev/null
 
-nmcli connection down bond0
-nmcli connection modify bond0 bond.options "mode=active-backup,primary=ens160"
-nmcli connection up bond0
-nmcli connection up ens160-bond0
-nmcli connection up ens192-bond0
+# 이미 Bond 프로파일이 있다면 modify 모드 수행
+if [[ $? -ne 0 ]]; then
+    echo "→ Bond 이미 존재 → 수정"
+    nmcli connection modify $BOND_NAME ipv4.addresses "$BOND_ADDR" ipv4.gateway "$BOND_GW" ipv4.method manual
+    nmcli connection modify $BOND_NAME bond.options "mode=$BOND_MODE,primary=$SLAVE1"
+    nmcli connection modify $BOND_NAME connection.autoconnect yes
+fi
+
+
+echo "[3] Slave NIC 추가 (slave-type=bond)"
+
+nmcli connection add type ethernet slave-type bond \
+    ifname $SLAVE1 con-name ${SLAVE1}-${BOND_NAME} master $BOND_NAME
+
+nmcli connection add type ethernet slave-type bond \
+    ifname $SLAVE2 con-name ${SLAVE2}-${BOND_NAME} master $BOND_NAME
+
+
+echo "[4] Bond + Slave 인터페이스 DOWN"
+nmcli connection down $BOND_NAME 2>/dev/null
+nmcli connection down ${SLAVE1}-${BOND_NAME} 2>/dev/null
+nmcli connection down ${SLAVE2}-${BOND_NAME} 2>/dev/null
+
+
+echo "[5] 네트워크 설정 Reload"
 nmcli connection reload
- 
 
 
-RHEL 8부터 systemctl restart network 사용 X -> nmcli connection reload 사용
- 
+echo "[6] Bond + Slave 인터페이스 UP"
+nmcli connection up $BOND_NAME
+nmcli connection up ${SLAVE1}-${BOND_NAME}
+nmcli connection up ${SLAVE2}-${BOND_NAME}
 
-primary slave : active slave 우선순위 지정
- 
+
+echo
+echo "===== Bond 상태 (/proc/net/bonding/$BOND_NAME) ====="
+cat /proc/net/bonding/$BOND_NAME || echo "Bond 정보 없음!"
 
 
-5. 본딩 연결 활성화 확인
+echo
+echo "===== NMCLI 장치 상태 ====="
+nmcli device status | grep -e $BOND_NAME -e $SLAVE1 -e $SLAVE2
 
+
+echo
+echo "===== NMCLI 전체 프로필 목록 ====="
 nmcli connection show
- 
 
 
-
- 
-
- 
-
- 
-
-6. 본딩 연결 상태 확인
-
-cat /proc/net/bonding/bond0
- 
-
-
-
- 
-
- 
-
-
-
- 
-
-설명 : active-backup 모드 활성화 -> Active Slave : ens192, Standby Slave : ens160
-(Standby이라도 똑같이 데이터 수신함 -> 대신 가볍게 가져옴 (header만 가져오는 느낌))
-
- 
-
-본딩된 ens160, ens192의 ipv4는 bond0의 ipv4인 192.168.137.155/24으로 지정됨 (같은 ipv4)
+echo
+echo "===== Bond 설정 완료! ====="
