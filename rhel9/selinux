@@ -1,0 +1,7 @@
+### # [selinux disable]
+
+```bash
+# SELinux를 disabled로 변경합니다.
+setenforce 0
+sed -i 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+```
