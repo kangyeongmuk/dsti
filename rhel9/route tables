@@ -1,28 +1,75 @@
-mkdir -p /etc/iproute2
-vi /etc/iproute2/rt_tables
+📘 RHEL 9.x 멀티 게이트웨이 구성 가이드
+bond0 = 192.168.150.140 / ens3 = 172.16.200.139
+===============================================
+1) 라우팅 테이블 생성 (최초 1회)
+1. mkdir -p /etc/iproute2
 
-1) 라우팅 테이블 이름 추가
-echo "100 bond-main" >> /etc/iproute2/rt_tables
-echo "200 backup-net" >> /etc/iproute2/rt_tables
-
-2) bond0용 라우팅 테이블 생성
-ip route add 192.168.150.0/24 dev bond0 src 192.168.150.X table bond-main
-ip route add default via 192.168.150.1 dev bond0 table bond-main
+2. cat <<EOF >> /etc/iproute2/rt_tables
+100 rt10
+200 rt20
+EOF
 
 
-3) ens3용 라우팅 테이블 생성
-ip route add 172.16.200.0/24 dev ens3 src 172.16.200.X table backup-net
-ip route add default via 172.16.200.1 dev ens3 table backup-net
+완성된 /etc/iproute2/rt_tables 예시는 다음과 같음:
 
-4) 정책 라우팅 규칙 추가 (핵심)
-ip rule add from 192.168.150.X/32 table bond-main
-ip rule add from 172.16.200.X/32 table backup-net
+255 local
+254 main
+253 default
+0   unspec
+100 rt10
+200 rt20
 
-5) rp_filter 느슨하게 (중요!)
+2) bond0 정책 라우팅 설정 (rt10)
+3. nmcli connection modify bond0 ipv4.routes "192.168.150.0/24 0.0.0.0 table=100, 0.0.0.0/0 192.168.150.1 table=100"
 
-서로 다른 게이트웨이를 가진 NIC에선 응답 경로 다르면 필터링됨 → SSH 안 됨.
+4. nmcli connection modify bond0 ipv4.routing-rules "from 192.168.150.140/24 table 100 priority 1000"
 
-echo net.ipv4.conf.all.rp_filter=2 >> /etc/sysctl.conf
-echo net.ipv4.conf.bond0.rp_filter=2 >> /etc/sysctl.conf
-echo net.ipv4.conf.ens3.rp_filter=2 >> /etc/sysctl.conf
-sysctl -p
+3) ens3 정책 라우팅 설정 (rt20)
+5. nmcli connection modify ens3 ipv4.routes "172.16.200.0/24 0.0.0.0 table=200, 0.0.0.0/0 172.16.200.1 table=200"
+
+6. nmcli connection modify ens3 ipv4.routing-rules "from 172.16.200.139/24 table 200 priority 1001"
+
+4) NetworkManager 설정 적용
+7. nmcli connection up bond0
+8. nmcli connection up ens3
+
+5) Reverse Path Filtering 완화 (멀티GW 필수)
+(일시 적용)
+9. echo 0 > /proc/sys/net/ipv4/conf/bond0/rp_filter
+10. echo 0 > /proc/sys/net/ipv4/conf/ens3/rp_filter
+
+(영구 적용)
+11. cat <<EOF > /etc/sysctl.d/99-multi-gw.conf
+net.ipv4.conf.bond0.rp_filter = 0
+net.ipv4.conf.ens3.rp_filter = 0
+EOF
+
+12. sysctl --system
+
+6) 적용 검증 명령어
+정책 라우팅 규칙 확인
+13. ip rule
+
+
+예상 출력:
+
+1000: from 192.168.150.0/24 lookup rt10
+1001: from 172.16.200.0/24 lookup rt20
+
+bond0 라우팅 테이블 확인
+14. ip route show table 100
+
+
+예상:
+
+default via 192.168.150.1 dev bond0
+192.168.150.0/24 dev bond0 scope link
+
+ens3 라우팅 테이블 확인
+15. ip route show table 200
+
+
+예상:
+
+default via 172.16.200.1 dev ens3
+172.16.200.0/24 dev ens3 scope link
