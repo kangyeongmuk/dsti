@@ -6,17 +6,17 @@ echo "100 bond-main" >> /etc/iproute2/rt_tables
 echo "200 backup-net" >> /etc/iproute2/rt_tables
 
 2) bond0용 라우팅 테이블 생성
-ip route add 192.168.150.0/24 dev bond0 src 192.168.150.10 table bond-main
+ip route add 192.168.150.0/24 dev bond0 src 192.168.150.X table bond-main
 ip route add default via 192.168.150.1 dev bond0 table bond-main
 
 
 3) ens3용 라우팅 테이블 생성
-ip route add 172.16.200.0/24 dev ens3 src 172.16.200.10 table backup-net
+ip route add 172.16.200.0/24 dev ens3 src 172.16.200.X table backup-net
 ip route add default via 172.16.200.1 dev ens3 table backup-net
 
 4) 정책 라우팅 규칙 추가 (핵심)
-ip rule add from 192.168.150.10/32 table bond-main
-ip rule add from 172.16.200.10/32 table backup-net
+ip rule add from 192.168.150.X/32 table bond-main
+ip rule add from 172.16.200.X/32 table backup-net
 
 5) rp_filter 느슨하게 (중요!)
 
