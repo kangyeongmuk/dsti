@@ -1,0 +1,87 @@
+Bonding 설정 (RHEL 8.8)
+
+2025년 8월 13일 수요일
+
+오후 1:18
+
+Active-Backup(Mode 1) 설정
+ 
+
+1. Bonding 모듈 로딩
+
+lsmod | grep bond
+modprobe bonding
+lsmod | grep bond
+ 
+
+2. 본딩 생성 및 고정 IP 설정
+
+nmcli connection add type bond mode active-backup ipv4.method manual ipv4.addresses 192.168.137.155/24 ipv4.gateway 192.168.137.1 ifname bond0 con-name bond0 autoconnect yes
+
+nmcli connection show bond0 | grep -e connection.id -e ipv4.method -e ipv4.addresses -e ipv4.gateway
+ 
+
+
+3. 네트워크 본딩 slave 추가
+
+nmcli connection add type ethernet slave-type bond master bond0 ifname ens160 con-name ens160
+nmcli connection add type ethernet slave-type bond master bond0 ifname ens192 con-name ens192
+nmcli connection show | grep -e ens160 -e ens192
+ 
+
+설명 : ens160,ens192를 bond0에 본딩
+주의사항 : ifname, con-name 맞춰주기 (실제 물리 서버에서 오류 가능성)
+ 
+
+4. 본딩 primary slave 설정
+
+nmcli connection down bond0
+nmcli connection modify bond0 bond.options "mode=active-backup,primary=ens160"
+nmcli connection up bond0
+nmcli connection up ens160-bond0
+nmcli connection up ens192-bond0
+nmcli connection reload
+ 
+
+
+RHEL 8부터 systemctl restart network 사용 X -> nmcli connection reload 사용
+ 
+
+primary slave : active slave 우선순위 지정
+ 
+
+
+5. 본딩 연결 활성화 확인
+
+nmcli connection show
+ 
+
+
+
+ 
+
+ 
+
+ 
+
+6. 본딩 연결 상태 확인
+
+cat /proc/net/bonding/bond0
+ 
+
+
+
+ 
+
+ 
+
+
+
+ 
+
+설명 : active-backup 모드 활성화 -> Active Slave : ens192, Standby Slave : ens160
+(Standby이라도 똑같이 데이터 수신함 -> 대신 가볍게 가져옴 (header만 가져오는 느낌))
+
+ 
+
+본딩된 ens160, ens192의 ipv4는 bond0의 ipv4인 192.168.137.155/24으로 지정됨 (같은 ipv4)
