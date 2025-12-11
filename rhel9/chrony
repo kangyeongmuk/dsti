@@ -1,0 +1,18 @@
+yum install chrony -y
+
+vi /etc/chrony.conf
+#기존 server0~3 주석처리
+  
+#server time.bora.net iburst   << NTP서버 변경
+#server 000.000.000.000 iburst
+#server kr.pool.ntp.org iburst
+
+#저장 후 
+
+
+systemctl restart chronyd
+systemctl enable chronyd
+
+chronyc sources -v
+
+timedatectl set-timezone Asia/Seoul
