@@ -36,8 +36,6 @@ fi
 
 
 echo "[1] 기존 Slave NIC 관련 프로파일 삭제"
-nmcli connection delete ${SLAVE1}-${BOND_NAME} 2>/dev/null
-nmcli connection delete ${SLAVE2}-${BOND_NAME} 2>/dev/null
 nmcli connection delete $SLAVE1 2>/dev/null
 nmcli connection delete $SLAVE2 2>/dev/null
 
@@ -51,7 +49,7 @@ nmcli connection add type bond \
     bond.options "mode=$BOND_MODE,primary=$SLAVE1" \
     autoconnect yes 2>/dev/null
 
-# 이미 Bond 프로파일이 있다면 modify 모드 수행
+# Bond already exists → modify mode
 if [[ $? -ne 0 ]]; then
     echo "→ Bond 이미 존재 → 수정"
     nmcli connection modify $BOND_NAME ipv4.addresses "$BOND_ADDR" ipv4.gateway "$BOND_GW" ipv4.method manual
@@ -63,16 +61,16 @@ fi
 echo "[3] Slave NIC 추가 (slave-type=bond)"
 
 nmcli connection add type ethernet slave-type bond \
-    ifname $SLAVE1 con-name ${SLAVE1}-${BOND_NAME} master $BOND_NAME
+    ifname $SLAVE1 con-name $SLAVE1 master $BOND_NAME
 
 nmcli connection add type ethernet slave-type bond \
-    ifname $SLAVE2 con-name ${SLAVE2}-${BOND_NAME} master $BOND_NAME
+    ifname $SLAVE2 con-name $SLAVE2 master $BOND_NAME
 
 
 echo "[4] Bond + Slave 인터페이스 DOWN"
 nmcli connection down $BOND_NAME 2>/dev/null
-nmcli connection down ${SLAVE1}-${BOND_NAME} 2>/dev/null
-nmcli connection down ${SLAVE2}-${BOND_NAME} 2>/dev/null
+nmcli connection down $SLAVE1 2>/dev/null
+nmcli connection down $SLAVE2 2>/dev/null
 
 
 echo "[5] 네트워크 설정 Reload"
@@ -81,8 +79,8 @@ nmcli connection reload
 
 echo "[6] Bond + Slave 인터페이스 UP"
 nmcli connection up $BOND_NAME
-nmcli connection up ${SLAVE1}-${BOND_NAME}
-nmcli connection up ${SLAVE2}-${BOND_NAME}
+nmcli connection up $SLAVE1
+nmcli connection up $SLAVE2
 
 
 echo
