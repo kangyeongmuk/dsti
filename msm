@@ -1,0 +1,35 @@
+ubuntu 
+
+mkdir /tmp/raid_manager
+cd /tmp/raid_manager  
+wget https://docs.broadcom.com/docs-and-downloads/raid-controllers/raid-controllers-common-files/17.05.00.02_Linux-64_MSM.gz
+tar xzf 17.05.00.02_Linux-64_MSM.gz
+cd /tmp/raid_manager/disk
+apt-get -y install alien
+alien --scripts *.rpm
+dpkg --install lib-utils2_1.00-9_all.deb
+dpkg --install megaraid-storage-manager_17.05.00-3_all.deb
+
+systemctl daemon-reload
+systemctl start vivaldiframeworkd.service
+systemctl enable vivaldiframeworkd.service
+
+cd /root
+rm -rf /tmp/raid_manager
+
+
+cent,rocky
+
+mkdir /tmp/raid_manager
+cd /tmp/raid_manager  
+wget https://docs.broadcom.com/docs-and-downloads/raid-controllers/raid-controllers-common-files/17.05.00.02_Linux-64_MSM.gz
+tar xzf 17.05.00.02_Linux-64_MSM.gz
+cd /tmp/raid_manager/disk
+./install.csh -a
+
+systemctl daemon-reload
+systemctl start vivaldiframeworkd.service
+systemctl enable vivaldiframeworkd.service
+
+cd /root
+rm -rf /tmp/raid_manager
