@@ -1,0 +1,55 @@
+3️⃣ 방법 ② Policy Routing (실무 최다 사용 ⭐)
+
+출발지 IP / 인터페이스별로 다른 GW 사용
+
+① 라우팅 테이블 추가
+vi /etc/iproute2/rt_tables
+
+100 gw1
+200 gw2
+
+② 테이블별 라우트
+ip route add default via 192.168.0.1 dev eth0 table gw1
+ip route add default via 10.0.0.1 dev eth1 table gw2
+
+③ 규칙 추가 (출발지 기준)
+ip rule add from 192.168.0.100 table gw1
+ip rule add from 10.0.0.100 table gw2
+
+④ 로컬 라우트 (중요)
+ip route add 192.168.0.0/24 dev eth0 src 192.168.0.100 table gw1
+ip route add 10.0.0.0/24 dev eth1 src 10.0.0.100 table gw2
+
+
+🔍 확인
+
+ip rule show
+ip route show table gw1
+ip route show table gw2
+
+
+✅ 서버 2 NIC + 2 회선 환경에서 정석
+✅ 멀티패스 / 스토리지 / 백업망 분리할 때 필수
+
+
+5️⃣ 방법 ④ NetworkManager / netplan (OS 설정)
+🔹 Ubuntu (netplan + policy)
+network:
+  version: 2
+  ethernets:
+    eth0:
+      addresses: [192.168.0.100/24]
+      routes:
+        - to: 0.0.0.0/0
+          via: 192.168.0.1
+          table: 100
+      routing-policy:
+        - from: 192.168.0.100
+          table: 100
+
+netplan apply
+
+🔹 Rocky / RHEL (nmcli)
+nmcli con mod eth0 ipv4.routes "0.0.0.0/0 192.168.0.1 table=100"
+nmcli con mod eth0 ipv4.routing-rules "from 192.168.0.100 table 100"
+nmcli con up eth0
