@@ -1,0 +1,44 @@
+1.	Redhat 계정 생성
+https://www.redhat.com/wapps/ugc/register.html
+
+2.	Subscription 평가판 발급
+https://www.redhat.com/ko/products/trials
+
+3.	SubScription 생성 확인
+https://access.redhat.com/management/subscriptions
+
+4.	RHEL 환경 준비
+사이트와 통신 확인
+ping access.redhat.com
+
+5.	Subscription 등록 (계정은 redhat 사이트 계정 정보)
+[root@rhel8 ~]# subscription-manager register
+등록 대상: subscription.rhsm.redhat.com:443/subscription
+사용자 이름: whswhs4
+비밀번호:
+시스템은 ID로 등록되어 있습니다: 9bd739f2-7f43-4990-bb8d-a68728b07084
+등록된 시스템 이름: rhel8.8
+
+6.	사용 가능한 subscription 확인
+subscription-manager list --available
+풀 ID:             2c94ca669b14a1e9019b6cb946a86a54
+
+7.	Pool ID로 Subscription 연결
+subscription-manager attach --pool=2c94ca669b14a1e9019b6cb946a86a54
+
+8.	현재 연결된 subscription 확인
+subscription-manager list --consumed
+
+9.	사이트 확인
+
+10.	Repolist 확인 및 업데이트
+yum repolist
+
+11.	Subscription 서버에서 삭제
+subscription-manager remove --all
+
+12.	시스템에서 등록 취소
+subscription-manager unregister
+
+13.	로컬 데이터 삭제
+subscription-manager clean
