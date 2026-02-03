@@ -18,6 +18,7 @@ nmcli con mod bond1 \
 nmcli con reload
 nmcli con up bond0
 nmcli con up bond1
+systemctl restart NetworkManager
 
 ip rule show | grep -E "100|200"
 ip route show table 100
