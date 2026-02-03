@@ -1,6 +1,9 @@
 ```bash
-nmcli con mod bond0 ipv4.gateway "" ipv4.never-default yes
-nmcli con mod bond1 ipv4.gateway "" ipv4.never-default yes
+nmcli con mod bond0 ipv4.gateway ""
+nmcli con mod bond0 ipv4.never-default yes
+
+nmcli con mod bond1 ipv4.gateway ""
+nmcli con mod bond1 ipv4.never-default yes
 
 nmcli con mod bond0 \
   ipv4.routes "0.0.0.0/0 192.168.150.1 table=100" \
