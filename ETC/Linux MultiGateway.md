@@ -1,5 +1,5 @@
 ```bash
-nmcli con mod bond0 ipv4.gateway ""
+nmcli con mod bond0 ipv4.gateway "192.168.150.1"
 nmcli con mod bond0 ipv4.never-default yes
 
 nmcli con mod bond1 ipv4.gateway ""
