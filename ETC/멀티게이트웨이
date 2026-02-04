@@ -1,0 +1,40 @@
+echo "1 rt_table1" >> /etc/iproute2/rt_tables
+echo "2 rt_table2" >> /etc/iproute2/rt_tables
+
+ip route add default via 192.168.150.1 dev bond0 table rt_table1
+ip rule add from 192.168.150.181 table rt_table1
+
+ip route add default via 192.168.200.1 dev bond1 table rt_table2
+ip rule add from 192.168.200.141 table rt_table2
+
+# /etc/sysctl.d/99-loose-rp_filter.conf 파일 생성 (또는 /etc/sysctl.conf에 추가)
+cat << EOF | sudo tee /etc/sysctl.d/99-loose-rp_filter.conf
+net.ipv4.conf.all.rp_filter = 2
+net.ipv4.conf.default.rp_filter = 2
+net.ipv4.conf.bond0.rp_filter = 2
+net.ipv4.conf.bond1.rp_filter = 2
+EOF
+
+# 즉시 적용
+sudo sysctl --system
+
+ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+# bond0: primary (낮은 metric 100)
+nmcli con mod bond0 +ipv4.routes "0.0.0.0/0 192.168.150.1 100"
+
+# bond1: backup (높은 metric 200)
+nmcli con mod bond1 +ipv4.routes "0.0.0.0/0 192.168.200.1 200"
+
+nmcli con mod bond0 ipv4.never-default yes
+nmcli con mod bond1 ipv4.never-default yes
+
+# bond0용 (primary): table 101에 default route 추가 (metric 10)
+nmcli con mod bond0 \
+    ipv4.routing-rules "priority 100 from 192.168.150.181/32 table 101" \
+    +ipv4.routes "0.0.0.0/0 192.168.150.1 10 table=101"
+
+# bond1용 (backup): table 102에 default route 추가 (metric 20)
+nmcli con mod bond1 \
+    ipv4.routing-rules "priority 200 from 192.168.200.141/32 table 102" \
+    +ipv4.routes "0.0.0.0/0 192.168.200.1 20 table=102"
