@@ -20,7 +20,7 @@ systemctl enable --now target
 targetcli
 
 # iSCSI Target 생성 (IQN 지정)
-iscsi create iqn.2025-12.com.test:1234
+iscsi/create iqn.2025-12.com.test:1234
 
 # 실제 디스크(/dev/sdb)를 백스토어로 등록
 backstores/block create name=iscsi dev=/dev/sdb
