@@ -41,7 +41,8 @@ iscsi/iqn.2025-12.com.test:1234/tpg1/acls delete iqn.1994-05.com.redhat:d4dd30d5
 iscsi/iqn.2025-12.com.test:1234/tpg1/portals delete 192.168.150.140
 
 # Target 삭제 (원하면)
-iscsi delete iqn.2025-12.com.test:1234
+cd iscsi
+delete iqn.2025-12.com.test:1234
 exit
 
 # Target 서비스 중지 (선택 사항)
